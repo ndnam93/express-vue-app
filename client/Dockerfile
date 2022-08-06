@@ -1,24 +1,28 @@
-FROM node:lts-alpine
+FROM node:lts-alpine as common-build-stage
 
-# install simple http server for serving static content
-RUN yarn global add http-server
-
-# make the 'app' folder the current working directory
 WORKDIR /app
 
-COPY package*.json ./
-COPY yarn.lock ./
+COPY package.json yarn.lock ./
 
-# install project dependencies
 RUN yarn
 
-# copy project files and folders to the current working directory (i.e. 'app' folder)
 COPY . .
 
-# build app for production with minification
-RUN yarn build
+# Development build stage
+FROM common-build-stage as development-build-stage
+
+EXPOSE 5173
+
+CMD [ "yarn", "dev" ]
+
+
+# Production build stage
+FROM common-build-stage as production-build-stage
 
 EXPOSE 8080
+
+RUN yarn global add http-server && yarn build
+
 CMD [ "http-server", "dist" ]
 
 
